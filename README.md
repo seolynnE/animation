@@ -287,8 +287,111 @@ function App() {
 - AnimatePresence로 slide 만들기
 
 ```
+const boxs = {
+  entry: (back: boolean) => ({
+    x: back ? -500 : 500,
+    opacity: 0,
+    scale: 0,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+    scale: 1,
+  },
+  exit: (back: boolean) => ({
+    x: back ? 500 : -500,
+    opacity: 0,
+    scale: 0,
+  }),
+};
+
+function App() {
+  const [visible, setVisible] = useState(1);
+  const [back, setBack] = useState(false);
+  const next = () => {
+    setBack(false);
+    setVisible((prev) => (prev === 10 ? 10 : prev + 1));
+  };
+  const prev = () => {
+    setBack(true);
+    setVisible((prev) => (prev === 1 ? 1 : prev - 1));
+  };
+  return (
+    <Wrapper>
+      <AnimatePresence mode="wait" custom={back}>
+        <Box
+          custom={back}
+          variants={boxs}
+          initial="entry"
+          animate="center"
+          exit="exit"
+          key={visible}
+        >
+          {visible}
+        </Box>
+      </AnimatePresence>
+      <button onClick={next}>next</button>
+      <button onClick={prev}>prev</button>
+    </Wrapper>
+  );
+}
 
 ```
 
 ❕ `custom`으로 `variants`와 `exit`값을 바꿀 수 있다.
 이 때 값을 바꾸고 싶은 영역은 함수로 작성을 해줘야 한다.
+❕ `<AnimatePresence />`에 `mode="wait"`을 추가하면 `<Box />`의 `exit`가 끝난 뒤 다음 애니메이션을 시작한다.
+
+- Layout animation
+
+```
+function App() {
+  const [click, setClick] = useState(false);
+  const toggleClick = () => setClick((prev) => !prev);
+  return (
+    <Wrapper onClick={toggleClick}>
+      <Box>{!click ? <Circle layoutId="circle" /> : null}</Box>
+      <Box>{click ? <Circle layoutId="circle" /> : null}</Box>
+    </Wrapper>
+  );
+}
+```
+
+❕ `layout`을 설정하면 자연스러운 모션을 추가해 줄 수 있고, `layoutId`를 똑같이 설정하면 같은 개체로 인식받게 해 자연스러운 애니메이션을 만들 수 있다. 와...혁신이다 개쩐다진짜
+
+- map을 활용해 layout animation 만들기
+
+```
+function App() {
+  const [id, setId] = useState<null | string>(null);
+  return (
+    <Wrap>
+      <Grid>
+        {["1", "2", "3", "4"].map((n) => (
+          <Box onClick={() => setId(n)} key={n} layoutId={n} />
+        ))}
+      </Grid>
+      <AnimatePresence>
+        {id ? (
+          <Overlay
+            onClick={() => setId(null)}
+            initial={{ backgroundColor: "rgba(0,0,0,0)", opacity: 0 }}
+            animate={{ backgroundColor: "rgba(0,0,0,0.6)", opacity: 1 }}
+            exit={{ backgroundColor: "rgba(0,0,0,0)", opacity: 0 }}
+          >
+            <Box
+              layoutId={id}
+              style={{
+                width: 400,
+                height: 200,
+              }}
+            />
+          </Overlay>
+        ) : null}
+      </AnimatePresence>
+      <button>Click</button>
+    </Wrap>
+  );
+}
+
+```
